@@ -1597,9 +1597,15 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="testDockWidget">
+  <widget class="QDockWidget" name="videoDockWidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="windowTitle">
-    <string>Test DockWidget</string>
+    <string>Video</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>

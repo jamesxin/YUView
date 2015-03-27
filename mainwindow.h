@@ -254,6 +254,7 @@ private:
     QAction* zoomInAction;
     QAction* zoomOutAction;
 
+    QAction* toggleVideoWidgetAction;
     QAction* togglePlaylistAction;
     QAction* toggleStatisticsAction;
     QAction* toggleFileOptionsAction;

@@ -57,6 +57,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_playlistWidget = NULL;
     ui->setupUi(this);
 
+    // There is no central widget. Everything is dockable.
+    setCentralWidget(NULL);
+
     statusBar()->hide();
     p_isSeparate = false;
     p_inspector.setTitle("Inspector");
@@ -111,7 +114,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
 
-    ui->testDockWidget->showNormal();
+    //ui->videoDockWidget->showNormal();
     
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
@@ -153,6 +156,8 @@ void MainWindow::createMenusAndActions()
     zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
     zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
     zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+    viewMenu->addSeparator();
+    toggleVideoWidgetAction = viewMenu->addAction("Hide/Show &Video", ui->videoDockWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
     togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
     toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()));
@@ -1263,8 +1268,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
     case Qt::Key_Escape:
     {
-        //if(isFullScreen())
-            //toggleFullscreen();
+        if (ui->videoDockWidget->isFullScreen())
+            toggleFullscreen();
         break;
     }
     case Qt::Key_F:
@@ -1324,10 +1329,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 void MainWindow::toggleFullscreen()
 {
     // Set dockable widget full screen
-    if (ui->testDockWidget->isFullScreen())
-      ui->testDockWidget->showNormal();
+    if (ui->videoDockWidget->isFullScreen())
+      ui->videoDockWidget->showNormal();
     else
-      ui->testDockWidget->showFullScreen();
+      ui->videoDockWidget->showFullScreen();
       
     //ui->testDockWidget->setWindowState(Qt::WindowFullScreen);
 
