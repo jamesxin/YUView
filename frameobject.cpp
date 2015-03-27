@@ -50,6 +50,7 @@ enum {
 };
 
 QCache<CacheIdx, QPixmap> FrameObject::frameCache;
+QStringList duplicateList;
 
 FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
@@ -81,20 +82,16 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     QFileInfo checkFile(srcFileName);
     if( checkFile.exists() && checkFile.isFile() )
     {
+
         p_srcFile = new YUVFile(srcFileName);
-
         p_srcFile->extractFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
-
+        duplicateList.append(p_srcFile->fileName());
         // listen to changes emitted from YUV file and propagate to GUI
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(refreshDisplayImage()));
         // listen to changes emitted from frame object and propagate to GUI
         QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(refreshDisplayImage()));
-        // TODO:
-        // what to do with signals emitted from the display object? this here does not work
-        QObject::connect(this, SIGNAL(informationChanged()), this, SLOT(refreshDisplayImage()));
-        QObject::connect(this, SIGNAL(informationChanged()), this, SLOT(propagateParameterChanges()));
 
         // set our name (remove file extension)
         int lastPoint = p_srcFile->fileName().lastIndexOf(".");
@@ -108,6 +105,7 @@ FrameObject::~FrameObject()
 {
     if(p_srcFile != NULL)
     {
+        duplicateList.removeOne(p_srcFile->fileName());
         clearCurrentCache();
         delete p_srcFile;
     }
@@ -115,8 +113,9 @@ FrameObject::~FrameObject()
 
 void FrameObject::clearCurrentCache()
 {
-    // TODO: Yes, this also deletes any duplicate Playlist entries for now
     if (p_srcFile!=NULL)
+    {
+    if (duplicateList.count(p_srcFile->fileName())==0)
     {
         for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
         {
@@ -124,6 +123,7 @@ void FrameObject::clearCurrentCache()
          if (frameCache.contains(cIdx))
                  frameCache.remove(cIdx);
         }
+    }
     }
 }
 
@@ -181,16 +181,6 @@ void FrameObject::loadImage(int frameIdx)
 
     // update our QImage with frame buffer
     p_displayImage = *cachedFrame;
-}
-
-// this slot is called when some parameters of the frame change
-void FrameObject::refreshDisplayImage()
-{
-    clearCurrentCache();
-    // TODO:
-    // might be superfluous to call here as loadImage will be indirectly called from the
-    // mainwindow after informationChanged() has been caught in currentSelectionInformationChanged()
-    loadImage(p_lastIdx);
 }
 
 ValuePairList FrameObject::getValuesAt(int x, int y)

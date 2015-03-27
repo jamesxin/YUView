@@ -204,6 +204,11 @@ void MainWindow::updateRecentFileActions()
 
 MainWindow::~MainWindow()
 {
+    p_controls.close();
+    p_playlists.close();
+    p_inspector.close();
+
+
     delete ui;
 }
 
@@ -1036,10 +1041,10 @@ void MainWindow::updateMetaInfo()
     QObject::disconnect( ui->rateSpinBox, SIGNAL(valueChanged(double)), NULL, NULL );
     QObject::disconnect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL );
-    QObject::disconnect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), NULL, NULL );
-
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
+    QObject::disconnect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(currentSelectionInformationChanged()));
+
 
     if( selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
     {
