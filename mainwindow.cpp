@@ -1335,12 +1335,16 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::toggleFullscreen()
 {
+    // Only toggle if window is floating
+    if (!ui->videoDockWidget->isFloating())
+        return;
+
     // Set dockable widget full screen
-    if (ui->videoDockWidget->isMaximized())
+    if (ui->videoDockWidget->windowState() & Qt::WindowFullScreen)
     {
       // Set the normal title widget
       ui->videoDockWidget->setTitleBarWidget(p_defaultTitleBarWidget);
-      ui->videoDockWidget->showNormal();
+      ui->videoDockWidget->setWindowState(Qt::WindowNoState);
       // Restore size before maximizing
       ui->videoDockWidget->resize(p_videoNormalSize);
       ui->videoDockWidget->move(p_videoNormalPos);
@@ -1351,7 +1355,8 @@ void MainWindow::toggleFullscreen()
       p_videoNormalSize = ui->videoDockWidget->size();
       p_videoNormalPos = ui->videoDockWidget->pos();
       ui->videoDockWidget->setTitleBarWidget(p_emptyWidget);
-      ui->videoDockWidget->showMaximized();
+      //ui->videoDockWidget->showMaximized(); -> does not work on linux
+      ui->videoDockWidget->setWindowState(Qt::WindowFullScreen);
     }
       
     //ui->testDockWidget->setWindowState(Qt::WindowFullScreen);
