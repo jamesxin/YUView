@@ -273,6 +273,12 @@ private:
     QAction *bugReportAction;
     QAction *featureRequestAction;
 
+    // Video QDockWidget
+    QWidget *p_emptyWidget;
+    QWidget *p_defaultTitleBarWidget;
+    QSize    p_videoNormalSize;  // The size of the video widget before maximizing
+    QPoint   p_videoNormalPos;   // The position of the video widget before maximizing
+
     enum { MaxRecentFiles = 5 };
     QAction *recentFileActs[MaxRecentFiles];
 

@@ -115,6 +115,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     restoreState(settings.value("windowState").toByteArray());
 
     //ui->videoDockWidget->showNormal();
+    p_emptyWidget = new QWidget();
+    p_defaultTitleBarWidget = ui->videoDockWidget->titleBarWidget();
     
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
@@ -1334,10 +1336,23 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 void MainWindow::toggleFullscreen()
 {
     // Set dockable widget full screen
-    if (ui->videoDockWidget->isFullScreen())
+    if (ui->videoDockWidget->isMaximized())
+    {
+      // Set the normal title widget
+      ui->videoDockWidget->setTitleBarWidget(p_defaultTitleBarWidget);
       ui->videoDockWidget->showNormal();
+      // Restore size before maximizing
+      ui->videoDockWidget->resize(p_videoNormalSize);
+      ui->videoDockWidget->move(p_videoNormalPos);
+    }
     else
-      ui->videoDockWidget->showFullScreen();
+    {
+      // Save size
+      p_videoNormalSize = ui->videoDockWidget->size();
+      p_videoNormalPos = ui->videoDockWidget->pos();
+      ui->videoDockWidget->setTitleBarWidget(p_emptyWidget);
+      ui->videoDockWidget->showMaximized();
+    }
       
     //ui->testDockWidget->setWindowState(Qt::WindowFullScreen);
 
