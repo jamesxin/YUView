@@ -111,6 +111,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
 
+    ui->testDockWidget->showNormal();
+    
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
@@ -1261,8 +1263,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
     case Qt::Key_Escape:
     {
-        if(isFullScreen())
-            toggleFullscreen();
+        //if(isFullScreen())
+            //toggleFullscreen();
         break;
     }
     case Qt::Key_F:
@@ -1321,47 +1323,53 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::toggleFullscreen()
 {
-
-
-    if(isFullScreen())
-    {
-        // show panels
-        ui->fileDockWidget->show();
-        ui->playlistDockWidget->show();
-        ui->statsDockWidget->show();
-        ui->displayDockWidget->show();
-        ui->controlsDockWidget->show();
-        ui->YUVMathdockWidget->show();
-
-#ifndef QT_OS_MAC
-        // show menu
-        ui->menuBar->show();
-#endif
-        ui->displaySplitView->showNormal();
-        showNormal();
-    }
+    // Set dockable widget full screen
+    if (ui->testDockWidget->isFullScreen())
+      ui->testDockWidget->showNormal();
     else
-    {
-        // hide panels
-        if(p_isSeparate==false)
-        {
-        ui->fileDockWidget->hide();
-        ui->playlistDockWidget->hide();
-        ui->statsDockWidget->hide();
-        ui->displayDockWidget->hide();
-        ui->controlsDockWidget->hide();
-        ui->YUVMathdockWidget->hide();
-#ifndef QT_OS_MAC
-        // hide menu
-        ui->menuBar->hide();
-#endif
-        }
+      ui->testDockWidget->showFullScreen();
+      
+    //ui->testDockWidget->setWindowState(Qt::WindowFullScreen);
 
-        ui->displaySplitView->showFullScreen();
-
-        showFullScreen();
-    }
-    ui->displaySplitView->updateView();
+//    if(isFullScreen())
+//    {
+//        // show panels
+//        ui->fileDockWidget->show();
+//        ui->playlistDockWidget->show();
+//        ui->statsDockWidget->show();
+//        ui->displayDockWidget->show();
+//        ui->controlsDockWidget->show();
+//        ui->YUVMathdockWidget->show();
+//
+//#ifndef QT_OS_MAC
+//        // show menu
+//        ui->menuBar->show();
+//#endif
+//        ui->displaySplitView->showNormal();
+//        showNormal();
+//    }
+//    else
+//    {
+//        // hide panels
+//        if(p_isSeparate==false)
+//        {
+//        ui->fileDockWidget->hide();
+//        ui->playlistDockWidget->hide();
+//        ui->statsDockWidget->hide();
+//        ui->displayDockWidget->hide();
+//        ui->controlsDockWidget->hide();
+//        ui->YUVMathdockWidget->hide();
+//#ifndef QT_OS_MAC
+//        // hide menu
+//        ui->menuBar->hide();
+//#endif
+//        }
+//
+//        ui->displaySplitView->showFullScreen();
+//
+//        showFullScreen();
+//    }
+//    ui->displaySplitView->updateView();
 }
 
 void MainWindow::setControlsEnabled(bool flag)
