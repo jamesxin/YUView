@@ -35,7 +35,7 @@ class DisplaySplitWidget : public QSplitter
 {
     Q_OBJECT
 public:
-    DisplaySplitWidget(QWidget *parent);
+    DisplaySplitWidget(QWidget *parent=NULL);
     ~DisplaySplitWidget();
 
     void setActiveDisplayObjects(DisplayObject *newPrimaryDisplayObject, DisplayObject *newSecondaryDisplayObject );

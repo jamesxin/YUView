@@ -32,6 +32,7 @@
 #include <QByteArray>
 #include <QDebug>
 #include <QTextEdit>
+#include <QtCore/qglobal.h> 
 
 #include "playlistitemvid.h"
 #include "playlistitemstats.h"
@@ -78,7 +79,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_playTimer->setTimerType(Qt::PreciseTimer);
 #endif
 
-    ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
     p_heartbeatTimer = new QTimer(this);
     QObject::connect(p_heartbeatTimer, SIGNAL(timeout()), this, SLOT(heartbeatTimerEvent()));
     p_heartbeatTimer->setSingleShot(false);
@@ -117,6 +117,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //ui->videoDockWidget->showNormal();
     p_emptyWidget = new QWidget();
     p_defaultTitleBarWidget = ui->videoDockWidget->titleBarWidget();
+    ui->videoDockWidget->setFloating(false);
+#ifndef Q_OS_WIN32
+    p_videoWidgetMaximized = false;
+#endif
     
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
@@ -154,10 +158,10 @@ void MainWindow::createMenusAndActions()
     showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
 
     QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
-    zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(zoomToStandard()), Qt::CTRL + Qt::Key_0);
-    zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
-    zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-    zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+    zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->splitterWidget, SLOT(zoomToStandard()), Qt::CTRL + Qt::Key_0);
+    zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->splitterWidget, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
+    zoomInAction = viewMenu->addAction("Zoom in", ui->splitterWidget, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
+    zoomOutAction = viewMenu->addAction("Zoom out", ui->splitterWidget, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
     viewMenu->addSeparator();
     toggleVideoWidgetAction = viewMenu->addAction("Hide/Show &Video", ui->videoDockWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
@@ -714,8 +718,8 @@ void MainWindow::updateSelectedItems()
         ui->YUVMathdockWidget->setEnabled(false);
         ui->statsDockWidget->setEnabled(false);
 
-        ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
-        ui->displaySplitView->setActiveStatisticsObjects(NULL, NULL);
+        ui->splitterWidget->setActiveDisplayObjects(NULL, NULL);
+        ui->splitterWidget->setActiveStatisticsObjects(NULL, NULL);
 
         // update model
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList( StatisticsTypeList() );
@@ -779,13 +783,13 @@ void MainWindow::updateSelectedItems()
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList(statsItem->displayObject()->getStatisticsTypeList());
 
     // update display widget
-    ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary?statsItemPrimary->displayObject():NULL, statsItemSecondary?statsItemSecondary->displayObject():NULL);
+    ui->splitterWidget->setActiveStatisticsObjects(statsItemPrimary?statsItemPrimary->displayObject():NULL, statsItemSecondary?statsItemSecondary->displayObject():NULL);
 
     if(selectedItemPrimary == NULL || selectedItemPrimary->displayObject() == NULL)
         return;
 
     // tell our display widget about new objects
-    ui->displaySplitView->setActiveDisplayObjects(selectedItemPrimary?selectedItemPrimary->displayObject():NULL, selectedItemSecondary?selectedItemSecondary->displayObject():NULL);
+    ui->splitterWidget->setActiveDisplayObjects(selectedItemPrimary?selectedItemPrimary->displayObject():NULL, selectedItemSecondary?selectedItemSecondary->displayObject():NULL);
 
     // update playback controls
     setControlsEnabled(true);
@@ -933,7 +937,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
     if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
     {
         p_currentFrame = 0;
-        ui->displaySplitView->clear();
+        ui->splitterWidget->clear();
         return;
     }
 
@@ -962,7 +966,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
         ui->frameSlider->setValue(p_currentFrame);
 
         // draw new frame
-        ui->displaySplitView->drawFrame(p_currentFrame);
+        ui->splitterWidget->drawFrame(p_currentFrame);
     }
 }
 
@@ -980,7 +984,7 @@ void MainWindow::updateMetaInfo()
             playlistItem->displayObject()->setWidth(ui->widthSpinBox->value());
             playlistItem->displayObject()->refreshNumberOfFrames();
         }
-        ui->displaySplitView->resetViews();
+        ui->splitterWidget->resetViews();
     }
     else if ((ui->heightSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender()))
     {
@@ -991,7 +995,7 @@ void MainWindow::updateMetaInfo()
             playlistItem->displayObject()->setHeight(heightVal);
             playlistItem->displayObject()->refreshNumberOfFrames();
         }
-        ui->displaySplitView->resetViews();
+        ui->splitterWidget->resetViews();
     }
     else if (ui->startoffsetSpinBox == QObject::sender())
     {
@@ -1251,7 +1255,7 @@ void MainWindow::updateGrid() {
     bool enableGrid = ui->regularGridCheckBox->checkState() == Qt::Checked;
     QSettings settings;
     QColor color = settings.value("OverlayGrid/Color").value<QColor>();
-    ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);
+    ui->splitterWidget->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);
 }
 
 void MainWindow::selectNextItem()
@@ -1273,91 +1277,125 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     // more keyboard shortcuts can be implemented here...
     switch(event->key())
     {
-    case Qt::Key_Escape:
-    {
-        if (ui->videoDockWidget->isFullScreen())
+        case Qt::Key_Escape:
+        {
             toggleFullscreen();
-        break;
-    }
-    case Qt::Key_F:
-    {
-        if (event->modifiers()==Qt::ControlModifier)
-            toggleFullscreen();
-        break;
-    }
-    case Qt::Key_Space:
-    {
-        togglePlayback();
-        break;
-    }
-    case Qt::Key_Left:
-    {
-        nextFrame();
-        break;
-    }
-    case Qt::Key_Right:
-    {
-        previousFrame();
-        break;
-    }
-    case Qt::Key_Up:
-    {
-        selectPreviousItem();
-        break;
-    }
-    case Qt::Key_Down:
-    {
-        selectNextItem();
-        break;
-    }
-    case Qt::Key_Plus:
-    {
-        ui->displaySplitView->zoomIn();
-        break;
-    }
-    case Qt::Key_Minus:
-    {
-        ui->displaySplitView->zoomOut();
-        break;
-    }
-    case Qt::Key_0:
-    {
-        ui->displaySplitView->zoomToStandard();
-        break;
-    }
-    case Qt::Key_9:
-    {
-        ui->displaySplitView->zoomToFit();
-        break;
-    }
+            break;
+        }
+        case Qt::Key_Space:
+        {
+            togglePlayback();
+            break;
+        }
+        case Qt::Key_Left:
+        {
+            nextFrame();
+            break;
+        }
+        case Qt::Key_Right:
+        {
+            previousFrame();
+            break;
+        }
+        case Qt::Key_Up:
+        {
+            selectPreviousItem();
+            break;
+        }
+        case Qt::Key_Down:
+        {
+            selectNextItem();
+            break;
+        }
+        case Qt::Key_Plus:
+        {
+            ui->splitterWidget->zoomIn();
+            break;
+        }
+        case Qt::Key_Minus:
+        {
+            ui->splitterWidget->zoomOut();
+            break;
+        }
+        case Qt::Key_0:
+        {
+            ui->splitterWidget->zoomToStandard();
+            break;
+        }
+        case Qt::Key_9:
+        {
+            ui->splitterWidget->zoomToFit();
+            break;
+        }
     }
 }
 
-void MainWindow::toggleFullscreen()
+void MainWindow::toggleFullscreen(int iScreen)
 {
     // Only toggle if window is floating
     if (!ui->videoDockWidget->isFloating())
         return;
 
-    // Set dockable widget full screen
-    if (ui->videoDockWidget->windowState() & Qt::WindowFullScreen)
+#ifdef Q_OS_WIN32
+    // On windows we can just use the showMaximized() functions
+    if (ui->videoDockWidget->isFullScreen())
+    {
+      // Reset to normal
+      ui->videoDockWidget->setWindowState(Qt::WindowNoState); // -> does not work on linux
+      // Show title bar
+      ui->videoDockWidget->setTitleBarWidget(p_defaultTitleBarWidget);
+    }
+    else
+    {
+      // Set fullscreen
+      //ui->videoDockWidget->showMaximized(); //-> does not work on linux
+      ui->videoDockWidget->setWindowState(Qt::WindowFullScreen);
+      // Hide title bar
+      ui->videoDockWidget->setTitleBarWidget(p_emptyWidget);
+    }
+#else
+    // On linux the showMaximized functions do not work so we set the size to the size of the screen manually
+    if (p_videoWidgetMaximized)
     {
       // Set the normal title widget
       ui->videoDockWidget->setTitleBarWidget(p_defaultTitleBarWidget);
-      ui->videoDockWidget->setWindowState(Qt::WindowNoState);
+
       // Restore size before maximizing
       ui->videoDockWidget->resize(p_videoNormalSize);
       ui->videoDockWidget->move(p_videoNormalPos);
     }
     else
     {
-      // Save size
+      // Save size before maximizing
       p_videoNormalSize = ui->videoDockWidget->size();
       p_videoNormalPos = ui->videoDockWidget->pos();
+
+      // Select screen size to maximize to
+      QRect maximizedRect;
+      QDesktopWidget desktop;
+      if (iScreen == -1 || iScreen >= desktop.numScreens())
+      {
+          // The one where the video window is in
+          maximizedRect = desktop.screenGeometry(ui->videoDockWidget);
+      }
+      else
+      {
+          // Get the screen with ID -1
+          maximizedRect = desktop.screenGeometry(iScreen);
+      }
+
+      // Hide title bar
       ui->videoDockWidget->setTitleBarWidget(p_emptyWidget);
-      //ui->videoDockWidget->showMaximized(); -> does not work on linux
-      ui->videoDockWidget->setWindowState(Qt::WindowFullScreen);
+
+      // Just set the screen size as the window size
+      ui->videoDockWidget->resize(maximizedRect.size());
+      ui->videoDockWidget->move(maximizedRect.topLeft());
     }
+    p_videoWidgetMaximized = !p_videoWidgetMaximized;
+#endif
+
+    
+
       
     //ui->testDockWidget->setWindowState(Qt::WindowFullScreen);
 
@@ -1424,7 +1462,7 @@ void MainWindow::frameTimerEvent()
         case RepeatModeOff:
             pause();
             if (p_ClearFrame)
-                ui->displaySplitView->drawFrame(INT_INVALID);
+                ui->splitterWidget->drawFrame(INT_INVALID);
             break;
         case RepeatModeOne:
             setCurrentFrame( selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
@@ -1647,7 +1685,7 @@ void MainWindow::statsTypesChanged()
     }
 
     // refresh display widget
-    ui->displaySplitView->drawFrame(p_currentFrame);
+    ui->splitterWidget->drawFrame(p_currentFrame);
 }
 
 void MainWindow::updateFrameSizeComboBoxSelection()
@@ -1749,7 +1787,7 @@ void MainWindow::saveScreenshot() {
 
     QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("PNG Files (*.png);"));
 
-    ui->displaySplitView->captureScreenshot().save(filename);
+    ui->splitterWidget->captureScreenshot().save(filename);
 
     filename = filename.section('/',0,-2);
     settings.setValue("LastScreenshotPath",filename);
@@ -1763,7 +1801,7 @@ void MainWindow::updateSettings()
 
     p_ClearFrame = p_settingswindow.getClearFrameState();
 
-    ui->displaySplitView->update();
+    ui->splitterWidget->update();
 }
 
 
@@ -1975,28 +2013,28 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 {
-    ui->displaySplitView->resetViews();
+    ui->splitterWidget->resetViews();
     switch (index)
     {
     case 0: // SIDE_BY_SIDE
-        ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+        ui->splitterWidget->setViewMode(SIDE_BY_SIDE);
         break;
     case 1: // COMPARISON
-        ui->displaySplitView->setViewMode(COMPARISON);
+        ui->splitterWidget->setViewMode(COMPARISON);
         break;
     }
 }
 
 void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 {
-    ui->displaySplitView->setZoomBoxEnabled(checked);
+    ui->splitterWidget->setZoomBoxEnabled(checked);
 }
 
 void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 {
-    ui->displaySplitView->setSplitEnabled(checkState);
+    ui->splitterWidget->setSplitEnabled(checkState);
     //ui->viewComboBox->setEnabled(checkState==Qt::Checked);
-    ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+    ui->splitterWidget->setViewMode(SIDE_BY_SIDE);
     ui->viewComboBox->setCurrentIndex(0);
 }
 

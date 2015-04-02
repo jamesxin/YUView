@@ -106,7 +106,7 @@ public slots:
     void toggleSeparateWindows();
 
     //! Toggle fullscreen playback
-    void toggleFullscreen();
+    void toggleFullscreen(int iScreen=-1);
 
     //! Shows the file open dialog and loads all selected Files
     void openFile();
@@ -273,11 +273,14 @@ private:
     QAction *bugReportAction;
     QAction *featureRequestAction;
 
-    // Video QDockWidget
     QWidget *p_emptyWidget;
     QWidget *p_defaultTitleBarWidget;
+#ifndef Q_OS_WIN32
+    // Required for fulscreen video on linux platforms only
     QSize    p_videoNormalSize;  // The size of the video widget before maximizing
     QPoint   p_videoNormalPos;   // The position of the video widget before maximizing
+    bool     p_videoWidgetMaximized;
+#endif
 
     enum { MaxRecentFiles = 5 };
     QAction *recentFileActs[MaxRecentFiles];
