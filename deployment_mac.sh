@@ -7,15 +7,15 @@ then
 fi
 
 # these paths need to be adapted to the local system
-QMAKE="/Users/jaeger/Qt5.2.1/5.1.1/clang_64/bin/qmake"
-MACDEPLOY="/Users/jaeger/Qt5.2.1/5.2.1/clang_64/bin/macdeployqt"
+QMAKE="/Users/jaeger/Qt/5.4/clang_64/bin/qmake"
+MACDEPLOY="/Users/jaeger/Qt/5.4/clang_64/bin/macdeployqt"
 
 # make sure that we have the latest version
 svn update
 
 # find version
-VERSION=$(git describe --abbrev=0 --tags)
-DIRNAME=YUView_$VERSION
+VERSION=$(git describe)
+DIRNAME="YUView_$VERSION-Mac"
 BUILD_DIR=$1
 SRC_DIR=$(pwd)
 PRO_FILE=$SRC_DIR/YUView.pro
@@ -29,6 +29,9 @@ make -w
 
 # step 1: make application deployable
 $MACDEPLOY $BUILD_DIR/YUView.app
+
+# step 1.1: update Info.plist with version number
+/usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString '${VERSION}'" $BUILD_DIR/YUView.app/Contents/Info.plist
 
 # step 2: copy files to temporary directory
 mkdir $DIRNAME

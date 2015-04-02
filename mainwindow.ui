@@ -59,7 +59,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
@@ -73,8 +73,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>93</width>
-     <height>140</height>
+     <width>102</width>
+     <height>153</height>
     </size>
    </property>
    <property name="floating">
@@ -179,8 +179,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>250</width>
-     <height>315</height>
+     <width>341</width>
+     <height>389</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -798,8 +798,8 @@
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
-     <width>158</width>
-     <height>168</height>
+     <width>176</width>
+     <height>183</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -978,6 +978,9 @@
        </property>
        <property name="checkable">
         <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
@@ -1567,6 +1570,9 @@
        </item>
        <item row="2" column="1">
         <widget class="QComboBox" name="colorConversionComboBox">
+         <property name="currentIndex">
+          <number>1</number>
+         </property>
          <item>
           <property name="text">
            <string>ITU-R.BT601</string>
@@ -1575,6 +1581,11 @@
          <item>
           <property name="text">
            <string>ITU-R.BT709</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>ITU-R.BT2020</string>
           </property>
          </item>
         </widget>

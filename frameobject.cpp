@@ -69,7 +69,9 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     p_lumaInvert = 0;
     p_chromaInvert = 0;
 
-    p_colorConversionMode = YUVC601ColorConversionType;
+    p_name = "";
+
+    p_colorConversionMode = YUVC709ColorConversionType;
 
     // initialize clipping table
     memset(clp_buf, 0, 384);
@@ -82,16 +84,13 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     QFileInfo checkFile(srcFileName);
     if( checkFile.exists() && checkFile.isFile() )
     {
-
         p_srcFile = new YUVFile(srcFileName);
         p_srcFile->extractFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
         duplicateList.append(p_srcFile->fileName());
+
         // listen to changes emitted from YUV file and propagate to GUI
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(refreshDisplayImage()));
-        // listen to changes emitted from frame object and propagate to GUI
-        QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(propagateParameterChanges()));
-        QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(refreshDisplayImage()));
 
         // set our name (remove file extension)
         int lastPoint = p_srcFile->fileName().lastIndexOf(".");
@@ -99,6 +98,10 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
 
         p_endFrame = p_srcFile->getNumberFrames(p_width, p_height)  -1;
     }
+
+    // listen to changes emitted from frame object and propagate to GUI
+    QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(propagateParameterChanges()));
+    QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(refreshDisplayImage()));
 }
 
 FrameObject::~FrameObject()
@@ -107,6 +110,7 @@ FrameObject::~FrameObject()
     {
         duplicateList.removeOne(p_srcFile->fileName());
         clearCurrentCache();
+        duplicateList.removeOne(p_srcFile->fileName());
         delete p_srcFile;
     }
 }
@@ -115,7 +119,7 @@ void FrameObject::clearCurrentCache()
 {
     if (p_srcFile!=NULL)
     {
-    if (duplicateList.count(p_srcFile->fileName())==0)
+    if (duplicateList.count(p_srcFile->fileName())<=1)
     {
         for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
         {
@@ -367,6 +371,12 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
             gvMult = -53279;
             buMult = 132201;
             break;
+        case YUVC2020ColorConversionType:
+            yMult =   76309;
+            rvMult = 110013;
+            guMult = -12276;
+            gvMult = -42626;
+            buMult = 140363;
         case YUVC709ColorConversionType:
         default:
             yMult =   76309;

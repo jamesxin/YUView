@@ -76,7 +76,7 @@ QPixmap DisplayWidget::captureScreenshot()
     tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
     pixmap.convertFromImage(tmpImage);
 
-    // TODO: check if it is possible to not draw the widget's background
+    // TODO: check if it is possible to _not_ draw the widget's background
     render(&pixmap, QPoint(), QRegion(p_displayRect), RenderFlags(DrawChildren));
 
     return pixmap;
@@ -101,13 +101,13 @@ void DisplayWidget::drawRegularGrid()
     // draw regular grid
     QPainter painter(this);
     float stepSize = (float)p_gridSize*zoomFactor();
-    for (float i=0; i<p_displayRect.width(); i+=stepSize)
+    for (float i=0; i<=p_displayRect.width(); i+=stepSize)
     {
         QPointF start = p_displayRect.topLeft() + QPointF(i,0);
         QPointF end = p_displayRect.bottomLeft() + QPointF(i,0);
         painter.drawLine(start, end);
     }
-    for (float i=0; i<p_displayRect.height(); i+=stepSize)
+    for (float i=0; i<=p_displayRect.height(); i+=stepSize)
     {
         QPointF start = p_displayRect.topLeft() + QPointF(0,i);
         QPointF end = p_displayRect.topRight() + QPointF(0,i);
