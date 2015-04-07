@@ -2145,9 +2145,9 @@ void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 
 void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 {
-    ui->displaySplitView->setSplitEnabled(checkState);
+    ui->splitterWidget->setSplitEnabled(checkState);
     ui->SplitViewgroupBox->setChecked(checkState);
-    ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+    ui->splitterWidget->setViewMode(SIDE_BY_SIDE);
     ui->viewComboBox->setCurrentIndex(0);
     QSettings settings;
     settings.setValue("SplitViewEnabled",checkState);
