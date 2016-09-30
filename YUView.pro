@@ -3,7 +3,7 @@
 # Project created by QtCreator 2010-10-28T14:12:12
 #
 #-------------------------------------------------
-
+#Need msvc 2013 update 5 to enable list initialization
 QT       += core gui opengl xml concurrent network
 
 TARGET = YUView
