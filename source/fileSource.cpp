@@ -31,7 +31,7 @@ fileSource::fileSource()
 {
   srcFile = NULL;
   fileChanged = false;
-
+  sizes << QSize(176,144) << QSize(320, 240) << QSize(416, 240) << QSize(352, 288) << QSize(640, 480) << QSize(832, 480) << QSize(704, 576) << QSize(720, 576) << QSize(1280, 720) << QSize(1920, 1080) << QSize(3840, 2160) << QSize(1024, 768) << QSize(1280, 960);
   connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
 }
 
@@ -132,6 +132,47 @@ QList<infoItem> fileSource::getFileInfoList()
   return infoList;
 }
 
+// we try to guess the format from filesize for some standard format
+void fileSource::formatFromFileSize(int &width, int &height, int &frameRate, int &bitDepth, QString &subFormat)
+{
+    //currently no, based on the
+    //subformat refer to 444(*3) 422(*2) 420(1.5)
+    //unfortunately it hard to the tell from the filesize, it is 8 bits 444 or 10 bit 420
+    //Since most case we use 10 bit, we let 10 bit 420 take the priority
+   QMap<float, QString> yuvFormats;
+   yuvFormats.insert(3.0, "444");
+   yuvFormats.insert(2.0, "422");
+   yuvFormats.insert(1.5, "420");
+    int fileSize = fileInfo.size();
+
+    if (subFormat =="")
+    {
+        foreach (QSize type, sizes) {
+            int frameSize = type.width() * type.height();
+            QMap<float, QString>::const_iterator yuvformat = yuvFormats.find((float)fileSize/(frameSize*2.0));
+
+            if (yuvformat != yuvFormats.end())
+            {
+                width = type.width();
+                height = type.height();
+                subFormat = yuvformat.value();
+                bitDepth = 10;
+                break;
+            }
+            yuvformat = yuvFormats.find((float)fileSize/(float)frameSize);
+            if (yuvformat != yuvFormats.end())
+            {
+                width = type.width();
+                height = type.height();
+                subFormat = yuvformat.value();
+                bitDepth = 8;
+                break;
+            }
+
+        }
+    }
+
+}
 void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth, QString &subFormat)
 {
   // preset return values first
@@ -150,6 +191,7 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
   
   if (name.isEmpty())
     return;
+
 
   // parse filename and extract width, height and framerate
   // default format is: sequenceName_widthxheight_framerate.yuv

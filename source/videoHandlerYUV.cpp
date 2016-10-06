@@ -81,6 +81,8 @@ videoHandlerYUV::YUVFormatList::YUVFormatList()
   append( videoHandlerYUV::yuvPixelFormat("4:2:2 8-bit packed", 8, 16, 1, 2, 1, false) );
   append( videoHandlerYUV::yuvPixelFormat("4:2:2 10-bit packed 'v210'", 10, 128, 6, 2, 1, false, 2) );
   append( videoHandlerYUV::yuvPixelFormat("4:2:2 10-bit packed (UYVY)", 10, 128, 6, 2, 1, true, 2) );
+//30/09/2016, James add the yuv422p10le
+  append( videoHandlerYUV::yuvPixelFormat("4:2:2 Y'CbCr 10-bit LE planar", 10, 32, 1, 2, 1, true, 2) );
   append( videoHandlerYUV::yuvPixelFormat("4:2:0 Y'CbCr 10-bit LE planar", 10, 24, 1, 2, 2, true, 2) );
   append( videoHandlerYUV::yuvPixelFormat("4:2:0 Y'CbCr 8-bit planar", 8, 12, 1, 2, 2, true) );
   append( videoHandlerYUV::yuvPixelFormat("4:1:1 Y'CbCr 8-bit planar", 8, 12, 1, 4, 1, true) );
@@ -673,7 +675,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       }
     }
   }
-    else if (srcPixelFormat == "4:2:0 Y'CbCr 10-bit LE planar") {
+
+  else if (srcPixelFormat == "4:2:0 Y'CbCr 10-bit LE planar") {
       // TODO: chroma interpolation for 4:2:0 10bit planar
       const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
       const unsigned short *srcU = srcY + componentLength;
@@ -683,9 +686,10 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       unsigned short *dstV = dstU + componentLength;
 
       int y;
-#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+    #pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
       for (y = 0; y < componentHeight; y++) {
         for (int x = 0; x < componentWidth; x++) {
+
           //dstY[x + y*componentWidth] = MIN(1023, CFSwapInt16LittleToHost(srcY[x + y*componentWidth])) << 6; // clip value for data which exceeds the 2^10-1 range
           //     dstY[x + y*componentWidth] = SwapInt16LittleToHost(srcY[x + y*componentWidth])<<6;
           //    dstU[x + y*componentWidth] = SwapInt16LittleToHost(srcU[x/2 + (y/2)*chromaWidth])<<6;
@@ -694,10 +698,37 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
           dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
           dstU[x + y*componentWidth] = qFromLittleEndian(srcU[x / 2 + (y / 2)*chromaWidth]);
           dstV[x + y*componentWidth] = qFromLittleEndian(srcV[x / 2 + (y / 2)*chromaWidth]);
+
         }
       }
+  }
+  //James: add support for yuv422p10le
+  else if (srcPixelFormat == "4:2:2 Y'CbCr 10-bit LE planar") {
+    // TODO: chroma interpolation for 4:2:2 10bit planar
+    const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+    const unsigned short *srcU = srcY + componentLength;
+    const unsigned short *srcV = srcU + chromaLength;
+    unsigned short *dstY = (unsigned short*)targetBuffer.data();
+    unsigned short *dstU = dstY + componentLength;
+    unsigned short *dstV = dstU + componentLength;
+
+    int y;
+#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+    for (y = 0; y < componentHeight; y++) {
+      for (int x = 0; x < componentWidth; x++) {
+        //dstY[x + y*componentWidth] = MIN(1023, CFSwapInt16LittleToHost(srcY[x + y*componentWidth])) << 6; // clip value for data which exceeds the 2^10-1 range
+        //     dstY[x + y*componentWidth] = SwapInt16LittleToHost(srcY[x + y*componentWidth])<<6;
+        //    dstU[x + y*componentWidth] = SwapInt16LittleToHost(srcU[x/2 + (y/2)*chromaWidth])<<6;
+        //    dstV[x + y*componentWidth] = SwapInt16LittleToHost(srcV[x/2 + (y/2)*chromaWidth])<<6;
+
+        dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
+        dstU[x + y*componentWidth] = qFromLittleEndian(srcU[x / 2 + y*chromaWidth]);
+        dstV[x + y*componentWidth] = qFromLittleEndian(srcV[x / 2 + y*chromaWidth]);
+      }
     }
-    else if (srcPixelFormat == "4:4:4 Y'CbCr 12-bit BE planar"
+  }
+
+  else if (srcPixelFormat == "4:4:4 Y'CbCr 12-bit BE planar"
       || srcPixelFormat == "4:4:4 Y'CbCr 16-bit BE planar")
     {
       // Swap the input data in 2 byte pairs.
@@ -1757,9 +1788,12 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
     {
       // Assume 444 format if subFormat is set. Otherwise assume 420
       yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
+       // James: extend to all 444, 422 and 420
       if (subFormat == "444")
         cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 10-bit LE planar" );
-      
+      else if (subFormat == "422")
+         cFormat = yuvFormatList.getFromName( "4:2:2 Y'CbCr 10-bit LE planar" );
+
       // Check if the file size and the assumed format match
       int bpf = cFormat.bytesPerFrame( size );
       if (bpf != 0 && (fileSize % bpf) == 0)
@@ -1825,13 +1859,15 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
     QSize(1280,720),
     QSize(1280,960),
     QSize(1920,1072),
-    QSize(1920,1080)
+    QSize(1920,1080),
+    //QSize(3840,2160)
   };
 
   // The candidate pixel formats
   QList<QString> testPixelFormats = {
     "4:2:0 Y'CbCr 8-bit planar",
     "4:2:2 Y'CbCr 8-bit planar",
+    //"4:2:2 Y'CbCr 10-bit LE planar",
     "4:2:0 Y'CbCr 10-bit LE planar"
   };
 
@@ -1875,47 +1911,51 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
       return;
   }
 
+  //James: This mse calculation is so weird.
   // calculate max. correlation for first two frames, use max. candidate frame size
-  int i=0;
-  while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
-  {
-    if( candidateModes[i].interesting )
-    {
-      yuvPixelFormat pixelFormat = yuvFormatList.getFromName( candidateModes[i].pixelFormatName );
-      picSize = pixelFormat.bytesPerFrame( candidateModes[i].frameSize );
+  //yuvPixelFormat pixelFormat = yuvFormatList.getFromName( candidateModes[i].pixelFormatName );
+  //picSize = pixelFormat.bytesPerFrame( candidateModes[0].frameSize );
 
-      // assumptions: YUV is planar (can be changed if necessary)
-      // only check mse in luminance
-      ptr  = (unsigned char*) rawYUVData.data();
-      candidateModes[i].mseY = computeMSE( ptr, ptr + picSize, picSize );
-    }
-    i++;
-  };
-
-  // step3: select best candidate
-  i=0;
-  leastMSE = std::numeric_limits<float>::max(); // large error...
-  bestMode = 0;
-  while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
-  {
-    if( candidateModes[i].interesting )
-    {
-      mse = (candidateModes[i].mseY);
-      if( mse < leastMSE )
+      int i=0;
+      while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
       {
-        bestMode = i;
-        leastMSE = mse;
-      }
-    }
-    i++;
-  };
+        if( candidateModes[i].interesting )
+        {
+            yuvPixelFormat pixelFormat = yuvFormatList.getFromName( candidateModes[i].pixelFormatName );
+            picSize = pixelFormat.bytesPerFrame( candidateModes[i].frameSize );
 
-  if( leastMSE < 400 )
-  {
-    // MSE is below threshold. Choose the candidate.
-    srcPixelFormat = yuvFormatList.getFromName( candidateModes[bestMode].pixelFormatName );
-    setFrameSize(candidateModes[bestMode].frameSize);
-  }
+          // assumptions: YUV is planar (can be changed if necessary)
+          // only check mse in luminance
+          ptr  = (unsigned char*) rawYUVData.data();
+          candidateModes[i].mseY = computeMSE( ptr, ptr + picSize, picSize );
+        }
+        i++;
+      };
+
+      // step3: select best candidate
+      i=0;
+      leastMSE = std::numeric_limits<float>::max(); // large error...
+      bestMode = 0;
+      while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
+      {
+        if( candidateModes[i].interesting )
+        {
+          mse = (candidateModes[i].mseY);
+          if( mse < leastMSE )
+          {
+            bestMode = i;
+            leastMSE = mse;
+          }
+        }
+        i++;
+      };
+
+      if( leastMSE < 400 )
+      {
+        // MSE is below threshold. Choose the candidate.
+        srcPixelFormat = yuvFormatList.getFromName( candidateModes[bestMode].pixelFormatName );
+        setFrameSize(candidateModes[bestMode].frameSize);
+      }
 }
 
 void videoHandlerYUV::loadFrame(int frameIndex)

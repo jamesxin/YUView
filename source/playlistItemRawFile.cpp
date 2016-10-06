@@ -44,7 +44,7 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   QFileInfo fi(rawFilePath);
   QString ext = fi.suffix();
   ext = ext.toLower();
-  if (ext == "yuv")
+  if (ext == "yuv" || ext == "wm1" || ext == "wm0")
   {
     video = new videoHandlerYUV;
     rawFormat = YUV;
@@ -146,7 +146,11 @@ void playlistItemRawFile::setFormatFromFileName()
   int width, height, rate, bitDepth;
   QString subFormat;
   dataSource.formatFromFilename(width, height, rate, bitDepth, subFormat);
-
+    //James: second chance to auto select the format
+  if(width <= 0 && height <= 0)
+  {
+      dataSource.formatFromFileSize(width, height, rate, bitDepth, subFormat);
+  }
   if(width > 0 && height > 0)
   {
     // We were able to extrace width and height from the file name using
