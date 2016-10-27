@@ -53,7 +53,7 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   viewMode = SIDE_BY_SIDE;
   drawZoomBox = false;
   drawRegularGrid = false;
-  regularGridSize = 64;
+  regularGridSize = 16;
   zoomBoxMousePosition = QPoint();
 
   playlist = NULL;
